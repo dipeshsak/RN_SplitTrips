@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   Animated,
+  useColorScheme,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Swipeable } from "react-native-gesture-handler";
@@ -14,6 +15,19 @@ import { MaterialIcons } from "@expo/vector-icons";
 
 export default function TripsScreen({ navigation }) {
   const [trips, setTrips] = useState([]);
+  const scheme = useColorScheme(); // Detect 'light' or 'dark'
+
+  const colors = {
+    bg: scheme === "dark" ? "#121212" : "#f2f2f2",
+    card: scheme === "dark" ? "#1e1e1e" : "#fff",
+    text: scheme === "dark" ? "#fff" : "#000",
+    subText: scheme === "dark" ? "#aaa" : "#555",
+    primary: "#007AFF",
+    success: "#22C55E",
+    danger: "#d9534f",
+    border: scheme === "dark" ? "#333" : "#ddd",
+    shadow: scheme === "dark" ? "#000" : "#aaa",
+  };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", async () => {
@@ -30,27 +44,21 @@ export default function TripsScreen({ navigation }) {
   const addTrip = () => navigation.navigate("AddTrip");
 
   const deleteTrip = async (id) => {
-    Alert.alert(
-      "Delete Trip",
-      "Are you sure you want to delete this trip?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            const updatedTrips = trips.filter((t) => t.id !== id);
-            setTrips(updatedTrips);
-            await AsyncStorage.setItem("trips", JSON.stringify(updatedTrips));
-          },
+    Alert.alert("Delete Trip", "Are you sure you want to delete this trip?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const updatedTrips = trips.filter((t) => t.id !== id);
+          setTrips(updatedTrips);
+          await AsyncStorage.setItem("trips", JSON.stringify(updatedTrips));
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const editTrip = (trip) => {
-    navigation.navigate("EditTrip", { trip });
-  };
+  const editTrip = (trip) => navigation.navigate("EditTrip", { trip });
 
   const renderRightActions = (progress, dragX, item) => {
     const scale = dragX.interpolate({
@@ -61,17 +69,27 @@ export default function TripsScreen({ navigation }) {
 
     return (
       <View style={styles.swipeContainer}>
-        <TouchableOpacity onPress={() => editTrip(item)}>
-          <Animated.View style={[styles.swipeButton, { backgroundColor: "#FFA500", transform: [{ scale }] }]}>
+        {/* <TouchableOpacity onPress={() => editTrip(item)}>
+          <Animated.View
+            style={[
+              styles.swipeButton,
+              { backgroundColor: "#FFA500", transform: [{ scale }] },
+            ]}
+          >
             <MaterialIcons name="edit" size={20} color="#fff" />
             <Text style={styles.swipeButtonText}>Edit</Text>
           </Animated.View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <TouchableOpacity onPress={() => deleteTrip(item.id)}>
-          <Animated.View style={[styles.swipeButton, { backgroundColor: "#FF3B30", transform: [{ scale }] }]}>
-            <MaterialIcons name="delete" size={20} color="#fff" />
-            <Text style={styles.swipeButtonText}>Delete</Text>
+        <TouchableOpacity onPress={() => deleteTrip(item.id)} style={{height: "auto" }}>
+          <Animated.View
+            style={[
+              styles.swipeButton,
+              { backgroundColor: "#FF3B30", transform: [{ scale }] },
+            ]}
+          >
+            <MaterialIcons name="delete" size={26} color="#fff" />
+            {/* <Text style={styles.swipeButtonText}>Delete</Text> */}
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -80,27 +98,44 @@ export default function TripsScreen({ navigation }) {
 
   const renderTrip = ({ item }) => {
     const date = new Date(parseInt(item.id));
-    const formattedDate = date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    const formattedDate =
+      date.toLocaleDateString() + " " + date.toLocaleTimeString();
 
     return (
-      <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}>
+      <Swipeable
+        renderRightActions={(progress, dragX) =>
+          renderRightActions(progress, dragX, item)
+        }
+      >
         <TouchableOpacity
-          style={styles.tripCard}
+          style={[
+            styles.tripCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
           onPress={() => navigation.navigate("TripDetail", { tripId: item.id })}
         >
-          <Text style={styles.tripName}>{item.name}</Text>
-          <Text style={styles.tripInfo}>👥 {item.people.join(", ")}</Text>
-          <Text style={styles.tripDate}>📅 {formattedDate}</Text>
+          <Text style={[styles.tripName, { color: colors.text }]}>
+            {item.name}
+          </Text>
+          <Text style={[styles.tripInfo, { color: colors.subText }]}>
+            👥 {item.people.join(", ")}
+          </Text>
+          <Text style={[styles.tripDate, { color: colors.subText }]}>
+            📅 {formattedDate}
+          </Text>
         </TouchableOpacity>
       </Swipeable>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>My Trips</Text>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.heading, { color: colors.text }]}>My Trips</Text>
+
       {trips.length === 0 ? (
-        <Text style={styles.noTrips}>No trips yet. Add one!</Text>
+        <Text style={[styles.noTrips, { color: colors.subText }]}>
+          No trips yet. Add one!
+        </Text>
       ) : (
         <FlatList
           data={trips}
@@ -109,7 +144,11 @@ export default function TripsScreen({ navigation }) {
           contentContainerStyle={{ paddingBottom: 100 }}
         />
       )}
-      <TouchableOpacity style={styles.addButton} onPress={addTrip}>
+
+      <TouchableOpacity
+        style={[styles.addButton, { backgroundColor: colors.primary }]}
+        onPress={addTrip}
+      >
         <Text style={styles.addText}>＋ Add Trip</Text>
       </TouchableOpacity>
     </View>
@@ -117,25 +156,23 @@ export default function TripsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f2f2f2" },
+  container: { flex: 1, padding: 20 },
   heading: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
-  noTrips: { fontSize: 16, textAlign: "center", marginTop: 50, color: "#555" },
+  noTrips: { fontSize: 16, textAlign: "center", marginTop: 50 },
   tripCard: {
-    backgroundColor: "#fff",
     padding: 18,
     marginVertical: 8,
     borderRadius: 14,
     elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
+    borderWidth: 1,
+    shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
   tripName: { fontSize: 18, fontWeight: "bold", marginBottom: 4 },
-  tripInfo: { fontSize: 14, color: "#555", marginBottom: 2 },
-  tripDate: { fontSize: 12, color: "#888" },
+  tripInfo: { fontSize: 14, marginBottom: 2 },
+  tripDate: { fontSize: 12 },
   addButton: {
-    backgroundColor: "#007AFF",
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -147,13 +184,19 @@ const styles = StyleSheet.create({
   addText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   swipeContainer: { flexDirection: "row", marginVertical: 8 },
   swipeButton: {
-    width: 80,
+    width: 70,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginHorizontal: 5,
     flexDirection: "row",
     paddingVertical: 12,
+    height:100
   },
-  swipeButtonText: { color: "#fff", fontWeight: "bold", marginLeft: 4, fontSize: 12 },
+  swipeButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    marginLeft: 4,
+    fontSize: 12,
+  },
 });
